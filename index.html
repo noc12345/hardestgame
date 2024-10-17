@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Square Collision</title>
+    <title>The worlds easiest game</title>
     <style>
         #player {
             width: 30px;
@@ -66,18 +66,31 @@
 
         // Move the player square and check for collisions
         function movePlayer() {
+            let moveX = 0;
+            let moveY = 0;
+
             if (keysPressed['d']) {
-                positionX += speed; // Move right
+                moveX += speed; // Move right
             }
             if (keysPressed['a']) {
-                positionX -= speed; // Move left
+                moveX -= speed; // Move left
             }
             if (keysPressed['w']) {
-                positionY -= speed; // Move up
+                moveY -= speed; // Move up
             }
             if (keysPressed['s']) {
-                positionY += speed; // Move down
+                moveY += speed; // Move down
             }
+
+            // Normalize diagonal movement
+            if (moveX !== 0 && moveY !== 0) {
+                const diagonalSpeed = Math.sqrt(moveX * moveX + moveY * moveY);
+                moveX = (moveX / diagonalSpeed) * speed;
+                moveY = (moveY / diagonalSpeed) * speed;
+            }
+
+            positionX += moveX;
+            positionY += moveY;
 
             player.style.left = positionX + 'px';
             player.style.top = positionY + 'px';
