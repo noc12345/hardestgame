@@ -13,36 +13,14 @@
             left: 0;
             top: 50px;
         }
-
-        #redSquare {
-            width: 30px;
-            height: 40px;
-            background-color: red;
-            position: absolute;
-            left: 300px;
-            top: 200px;
-        }
-
-        #wall {
-            width: 20px; /* Width of the wall */
-            height: 150px; /* Height of the wall */
-            background-color: black;
-            position: absolute;
-            left: 150px; /* Position of the wall */
-            top: 50px; /* Position of the wall */
-        }
     </style>
 </head>
 <body>
 
     <div id="player"></div>
-    <div id="redSquare"></div>
-    <div id="wall"></div>
 
     <script>
         let player = document.getElementById("player");
-        let redSquare = document.getElementById("redSquare");
-        let wall = document.getElementById("wall");
 
         let positionX = 0;
         let positionY = 50;
@@ -62,7 +40,7 @@
             keysPressed[event.key.toLowerCase()] = false;
         });
 
-        // Check collision between player and red square
+        // Check collision between player and target square
         function isColliding(player, target) {
             const playerRect = player.getBoundingClientRect();
             const targetRect = target.getBoundingClientRect();
@@ -74,6 +52,26 @@
                 playerRect.right < targetRect.left
             );
         }
+
+        // Function to create and add a square
+        function addSquare(color, width, height, left, top, type) {
+            const square = document.createElement("div");
+            square.style.width = width + "px";
+            square.style.height = height + "px";
+            square.style.backgroundColor = color;
+            square.style.position = "absolute";
+            square.style.left = left + "px";
+            square.style.top = top + "px";
+
+            // Add class to identify red or black square
+            square.classList.add(type);
+            document.body.appendChild(square);
+            return square;
+        }
+
+        // Create squares using the function
+        const redSquare = addSquare("red", 30, 40, 300, 200, "redSquare");
+        const wall = addSquare("black", 20, 150, 150, 50, "wall");
 
         // Move the player square and check for collisions
         function movePlayer() {
