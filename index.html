@@ -3,18 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The World's hardest game</title>
+    <title>Move Square with WASD</title>
     <style>
         #square {
             width: 100px;
             height: 100px;
             background-color: blue;
+            position: absolute;
+            left: 0;
+            top: 50px;
         }
     </style>
 </head>
 <body>
 
     <div id="square"></div>
+
+    <script>
+        let positionX = 0;
+        let positionY = 50;
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'd' || event.key === 'D') {
+                positionX += 10; // Move right
+            } else if (event.key === 'a' || event.key === 'A') {
+                positionX -= 10; // Move left
+            } else if (event.key === 'w' || event.key === 'W') {
+                positionY -= 10; // Move up
+            } else if (event.key === 's' || event.key === 'S') {
+                positionY += 10; // Move down
+            }
+
+            document.getElementById('square').style.left = positionX + 'px';
+            document.getElementById('square').style.top = positionY + 'px';
+        });
+    </script>
 
 </body>
 </html>
