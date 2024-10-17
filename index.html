@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Move Square with WASD</title>
+    <title>The worlds easiest game</title>
     <style>
         #square {
-            width: 100px;
-            height: 100px;
+            width: 30px;
+            height: 30px;
             background-color: blue;
             position: absolute;
             left: 0;
@@ -22,21 +22,39 @@
     <script>
         let positionX = 0;
         let positionY = 50;
+        let speed = 2;
+
+        const keysPressed = {};
 
         document.addEventListener('keydown', function(event) {
-            if (event.key === 'd' || event.key === 'D') {
-                positionX += 10; // Move right
-            } else if (event.key === 'a' || event.key === 'A') {
-                positionX -= 10; // Move left
-            } else if (event.key === 'w' || event.key === 'W') {
-                positionY -= 10; // Move up
-            } else if (event.key === 's' || event.key === 'S') {
-                positionY += 10; // Move down
+            keysPressed[event.key.toLowerCase()] = true;
+        });
+
+        document.addEventListener('keyup', function(event) {
+            keysPressed[event.key.toLowerCase()] = false;
+        });
+
+        function moveSquare() {
+            if (keysPressed['d']) {
+                positionX += speed; // Move right
+            }
+            if (keysPressed['a']) {
+                positionX -= speed; // Move left
+            }
+            if (keysPressed['w']) {
+                positionY -= speed; // Move up
+            }
+            if (keysPressed['s']) {
+                positionY += speed; // Move down
             }
 
             document.getElementById('square').style.left = positionX + 'px';
             document.getElementById('square').style.top = positionY + 'px';
-        });
+
+            requestAnimationFrame(moveSquare); // Continuously update movement
+        }
+
+        moveSquare(); // Start the movement loop
     </script>
 
 </body>
