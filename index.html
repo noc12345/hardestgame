@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The worlds easiest game</title>
+    <title>The World's Easiest Game</title>
     <style>
         #player {
             width: 30px;
@@ -22,16 +22,27 @@
             left: 300px;
             top: 200px;
         }
+
+        #wall {
+            width: 20px; /* Width of the wall */
+            height: 150px; /* Height of the wall */
+            background-color: black;
+            position: absolute;
+            left: 150px; /* Position of the wall */
+            top: 50px; /* Position of the wall */
+        }
     </style>
 </head>
 <body>
 
     <div id="player"></div>
     <div id="redSquare"></div>
+    <div id="wall"></div>
 
     <script>
         let player = document.getElementById("player");
         let redSquare = document.getElementById("redSquare");
+        let wall = document.getElementById("wall");
 
         let positionX = 0;
         let positionY = 50;
@@ -52,15 +63,15 @@
         });
 
         // Check collision between player and red square
-        function isColliding(player, redSquare) {
+        function isColliding(player, target) {
             const playerRect = player.getBoundingClientRect();
-            const redSquareRect = redSquare.getBoundingClientRect();
+            const targetRect = target.getBoundingClientRect();
 
             return !(
-                playerRect.top > redSquareRect.bottom ||
-                playerRect.bottom < redSquareRect.top ||
-                playerRect.left > redSquareRect.right ||
-                playerRect.right < redSquareRect.left
+                playerRect.top > targetRect.bottom ||
+                playerRect.bottom < targetRect.top ||
+                playerRect.left > targetRect.right ||
+                playerRect.right < targetRect.left
             );
         }
 
@@ -89,20 +100,31 @@
                 moveY = (moveY / diagonalSpeed) * speed;
             }
 
-            positionX += moveX;
-            positionY += moveY;
+            // Check collision with the wall
+            let newPosX = positionX + moveX;
+            let newPosY = positionY + moveY;
 
-            player.style.left = positionX + 'px';
-            player.style.top = positionY + 'px';
+            // Temporarily set the player position to check collision
+            player.style.left = newPosX + 'px';
+            player.style.top = newPosY + 'px';
 
-            // Check collision with red square
+            // If there's no collision with the wall, update the position
+            if (!isColliding(player, wall)) {
+                positionX = newPosX;
+                positionY = newPosY;
+            }
+
+            // Reset the player position if colliding with the red square
             if (isColliding(player, redSquare)) {
-                // Reset player position to the start
                 positionX = startX;
                 positionY = startY;
                 player.style.left = positionX + 'px';
                 player.style.top = positionY + 'px';
             }
+
+            // Update player position on screen
+            player.style.left = positionX + 'px';
+            player.style.top = positionY + 'px';
 
             requestAnimationFrame(movePlayer); // Continuously update movement
         }
