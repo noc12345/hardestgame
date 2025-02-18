@@ -42,11 +42,12 @@
     let obstacleTimer = 0;
     let obstacleInterval = 60;
 
-    const player = { x: 235, y: 460, width: 30, height: 30, speed: 5 };
+    const player = { x: 235, y: 460, width: 30, height: 30, speed: 5, dashSpeed: 12, dashing: false };
     let obstacles = [];
     let lasers = [];
+    let laserWarning = null;
     let laserTimer = 0;
-    const keys = { ArrowLeft: false, ArrowRight: false };
+    const keys = { ArrowLeft: false, ArrowRight: false, Space: false };
 
     document.addEventListener("keydown", (e) => { if (keys.hasOwnProperty(e.code)) keys[e.code] = true; });
     document.addEventListener("keyup", (e) => { if (keys.hasOwnProperty(e.code)) keys[e.code] = false; });
@@ -59,11 +60,15 @@
       obstacles.push({ x, y: -height, width, height, speed });
     }
 
-    function spawnLaser() {
+    function warnLaser() {
+      laserWarning = { y: player.y, timer: 60 }; // Flash for 1 second
+    }
+
+    function fireLaser() {
       const fromLeft = Math.random() < 0.5;
-      const y = Math.random() * (canvas.height - 50);
-      const speed = 4;
-      lasers.push({ x: fromLeft ? 0 : canvas.width, y, width: 80, height: 10, speed: fromLeft ? speed : -speed });
+      const speed = 8;
+      lasers.push({ x: fromLeft ? 0 : canvas.width, y: laserWarning.y, width: 80, height: 10, speed: fromLeft ? speed : -speed });
+      laserWarning = null; // Remove warning after firing
     }
 
     function rectIntersect(r1, r2) {
@@ -73,8 +78,11 @@
     function update() {
       if (gameOver) return;
 
-      if (keys.ArrowLeft) player.x -= player.speed;
-      if (keys.ArrowRight) player.x += player.speed;
+      if (keys.ArrowLeft) player.x -= player.dashing ? player.dashSpeed : player.speed;
+      if (keys.ArrowRight) player.x += player.dashing ? player.dashSpeed : player.speed;
+      if (keys.Space) player.dashing = true;
+      else player.dashing = false;
+
       player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
 
       obstacleTimer++;
@@ -85,10 +93,8 @@
       }
 
       laserTimer++;
-      if (laserTimer > 180) { // Every 3 seconds
-        spawnLaser();
-        laserTimer = 0;
-      }
+      if (laserTimer === 150) warnLaser(); // Warning at 2.5 sec
+      if (laserTimer === 180) { fireLaser(); laserTimer = 0; } // Fire at 3 sec
 
       obstacles.forEach(obs => obs.y += obs.speed);
       lasers.forEach(laser => laser.x += laser.speed);
@@ -127,6 +133,11 @@
 
       ctx.fillStyle = "#ff0";
       lasers.forEach(laser => ctx.fillRect(laser.x, laser.y, laser.width, laser.height));
+
+      if (laserWarning) {
+        ctx.fillStyle = "rgba(255, 0, 0, 0.5)";
+        ctx.fillRect(0, laserWarning.y, canvas.width, 10);
+      }
 
       ctx.fillStyle = "#fff";
       ctx.font = "20px Arial";
