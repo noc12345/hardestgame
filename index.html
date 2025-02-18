@@ -3,7 +3,6 @@
 <head>
   <title>Dodge the Falling Blocks</title>
   <style>
-    /* Basic styling to center the canvas and set a dark background */
     body {
       margin: 0;
       background-color: #000;
@@ -18,7 +17,6 @@
       background-color: #222;
       border: 2px solid #fff;
     }
-    /* Game over message styling */
     #gameOver {
       position: absolute;
       top: 50%;
@@ -39,138 +37,104 @@
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    // Game state variables
     let gameOver = false;
     let score = 0;
     let obstacleTimer = 0;
-    let obstacleInterval = 60; // Frames between obstacle spawns
+    let obstacleInterval = 60;
 
-    // Define the player object
-    const player = {
-      x: canvas.width / 2 - 15,
-      y: canvas.height - 40,
-      width: 30,
-      height: 30,
-      speed: 5
-    };
-
-    // Array to hold falling obstacles
+    const player = { x: 235, y: 460, width: 30, height: 30, speed: 5 };
     let obstacles = [];
+    let lasers = [];
+    let laserTimer = 0;
+    const keys = { ArrowLeft: false, ArrowRight: false };
 
-    // Object to track keyboard input
-    const keys = {
-      ArrowLeft: false,
-      ArrowRight: false
-    };
+    document.addEventListener("keydown", (e) => { if (keys.hasOwnProperty(e.code)) keys[e.code] = true; });
+    document.addEventListener("keyup", (e) => { if (keys.hasOwnProperty(e.code)) keys[e.code] = false; });
 
-    // Listen for key press events to move the player
-    document.addEventListener("keydown", function(e) {
-      if (e.code === "ArrowLeft" || e.code === "ArrowRight") {
-        keys[e.code] = true;
-      }
-    });
-
-    document.addEventListener("keyup", function(e) {
-      if (e.code === "ArrowLeft" || e.code === "ArrowRight") {
-        keys[e.code] = false;
-      }
-    });
-
-    // Function to spawn a new falling obstacle with random size and speed
     function spawnObstacle() {
-      const width = Math.random() * 30 + 20;   // Width between 20 and 50
-      const height = Math.random() * 20 + 20;    // Height between 20 and 40
+      const width = Math.random() * 30 + 20;
+      const height = Math.random() * 20 + 20;
       const x = Math.random() * (canvas.width - width);
-      const y = -height;
-      const speed = Math.random() * 2 + 2;         // Speed between 2 and 4
-      obstacles.push({ x, y, width, height, speed });
+      const speed = Math.random() * 2 + 2;
+      obstacles.push({ x, y: -height, width, height, speed });
     }
 
-    // Check for collision between two rectangles
+    function spawnLaser() {
+      const fromLeft = Math.random() < 0.5;
+      const y = Math.random() * (canvas.height - 50);
+      const speed = 4;
+      lasers.push({ x: fromLeft ? 0 : canvas.width, y, width: 80, height: 10, speed: fromLeft ? speed : -speed });
+    }
+
     function rectIntersect(r1, r2) {
-      return !(r2.x > r1.x + r1.width || 
-               r2.x + r2.width < r1.x || 
-               r2.y > r1.y + r1.height ||
-               r2.y + r2.height < r1.y);
+      return !(r2.x > r1.x + r1.width || r2.x + r2.width < r1.x || r2.y > r1.y + r1.height || r2.y + r2.height < r1.y);
     }
 
-    // Update game objects and check for collisions
     function update() {
       if (gameOver) return;
 
-      // Move player left/right based on input
-      if (keys.ArrowLeft) {
-        player.x -= player.speed;
-      }
-      if (keys.ArrowRight) {
-        player.x += player.speed;
-      }
-      // Keep the player within the canvas boundaries
-      if (player.x < 0) player.x = 0;
-      if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+      if (keys.ArrowLeft) player.x -= player.speed;
+      if (keys.ArrowRight) player.x += player.speed;
+      player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
 
-      // Spawn new obstacles at intervals
       obstacleTimer++;
       if (obstacleTimer > obstacleInterval) {
         spawnObstacle();
         obstacleTimer = 0;
-        // Gradually increase difficulty by reducing the interval (down to a limit)
-        if (obstacleInterval > 20) {
-          obstacleInterval--;
-        }
+        if (obstacleInterval > 20) obstacleInterval--;
       }
 
-      // Update each obstacle's position
-      obstacles.forEach(obs => {
-        obs.y += obs.speed;
-      });
+      laserTimer++;
+      if (laserTimer > 180) { // Every 3 seconds
+        spawnLaser();
+        laserTimer = 0;
+      }
 
-      // Remove obstacles that have moved off the bottom of the canvas
+      obstacles.forEach(obs => obs.y += obs.speed);
+      lasers.forEach(laser => laser.x += laser.speed);
+
       obstacles = obstacles.filter(obs => obs.y < canvas.height);
+      lasers = lasers.filter(laser => laser.x > -100 && laser.x < canvas.width + 100);
 
-      // Check for collisions between the player and obstacles
       for (let obs of obstacles) {
         if (rectIntersect(player, obs)) {
           gameOver = true;
           document.getElementById("gameOver").style.display = "block";
-          break;
+          return;
         }
       }
 
-      // Increase score over time (you can adjust this as desired)
-      score++;
+      for (let laser of lasers) {
+        if (rectIntersect(player, laser)) {
+          gameOver = true;
+          document.getElementById("gameOver").style.display = "block";
+          return;
+        }
+      }
 
-      // Continue the game loop
+      score++;
       requestAnimationFrame(draw);
     }
 
-    // Draw all game objects onto the canvas
     function draw() {
-      // Clear the canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw the player as a green square
       ctx.fillStyle = "#0f0";
       ctx.fillRect(player.x, player.y, player.width, player.height);
 
-      // Draw all obstacles as red rectangles
       ctx.fillStyle = "#f00";
-      obstacles.forEach(obs => {
-        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-      });
+      obstacles.forEach(obs => ctx.fillRect(obs.x, obs.y, obs.width, obs.height));
 
-      // Draw the current score in white
+      ctx.fillStyle = "#ff0";
+      lasers.forEach(laser => ctx.fillRect(laser.x, laser.y, laser.width, laser.height));
+
       ctx.fillStyle = "#fff";
       ctx.font = "20px Arial";
       ctx.fillText("Score: " + score, 10, 30);
 
-      // Continue updating if the game is still active
-      if (!gameOver) {
-        update();
-      }
+      if (!gameOver) update();
     }
 
-    // Start the game loop
     requestAnimationFrame(draw);
   </script>
 </body>
