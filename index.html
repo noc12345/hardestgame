@@ -58,7 +58,7 @@
     let laserWarning = null;
     let laserTimer = 0;
     let powerUps = [];
-    const keys = { ArrowLeft: false, ArrowRight: false, ArrowUp: false };
+    const keys = { ArrowLeft: false, ArrowRight: false, ArrowUp: false, ArrowDown: false };
 
     document.addEventListener("keydown", (e) => { if (keys.hasOwnProperty(e.code)) keys[e.code] = true; });
     document.addEventListener("keyup", (e) => { if (keys.hasOwnProperty(e.code)) keys[e.code] = false; });
@@ -104,6 +104,9 @@
       if (keys.ArrowUp && player.onGround) {
         player.velocityY = player.jumpPower;
         player.onGround = false;
+      }
+      if (keys.ArrowDown) {
+        player.velocityY = -player.jumpPower;
       }
 
       player.velocityY += gravity;
