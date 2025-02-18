@@ -33,41 +33,6 @@
   <canvas id="gameCanvas" width="500" height="500"></canvas>
   <div id="gameOver">Game Over!<br>Press F5 to Restart</div>
 
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Falling Dodge Game</title>
-  <style>
-    body {
-      margin: 0;
-      background-color: #000;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      overflow: hidden;
-      font-family: sans-serif;
-    }
-    canvas {
-      background-color: #222;
-      border: 2px solid #fff;
-    }
-    #gameOver {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: white;
-      font-size: 36px;
-      text-align: center;
-      display: none;
-    }
-  </style>
-</head>
-<body>
-  <canvas id="gameCanvas" width="500" height="500"></canvas>
-  <div id="gameOver">Game Over!<br>Press F5 to Restart</div>
-
   <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -76,13 +41,14 @@
     let score = 0;
     let obstacleTimer = 0;
     let obstacleInterval = 60;
-    let gravity = 3;
+    let gravity = 2;
 
-    const player = { x: 235, y: 460, width: 30, height: 30, speed: 5, jumpPower: -15, velocityY: 0, onGround: true };
+    const player = { x: 235, y: 460, width: 30, height: 30, speed: 6, jumpPower: -25, velocityY: 0, onGround: true, shield: false, shieldTime: 0 };
     let obstacles = [];
     let lasers = [];
     let laserWarning = null;
     let laserTimer = 0;
+    let powerUps = [];
     const keys = { ArrowLeft: false, ArrowRight: false, ArrowUp: false };
 
     document.addEventListener("keydown", (e) => { if (keys.hasOwnProperty(e.code)) keys[e.code] = true; });
@@ -93,18 +59,27 @@
       const height = Math.random() * 20 + 20;
       const x = Math.random() * (canvas.width - width);
       const speed = Math.random() * 2 + 2;
-      obstacles.push({ x, y: 0, width, height, speed }); // Now falling from the top!
+      obstacles.push({ x, y: 0, width, height, speed });
     }
 
     function warnLaser() {
-      laserWarning = { y: player.y + player.height / 2, timer: 60 }; // Warning before firing
+      laserWarning = { y: player.y + player.height / 2, timer: 60 };
     }
 
     function fireLaser() {
       const fromLeft = Math.random() < 0.5;
       const speed = 8;
       lasers.push({ x: fromLeft ? 0 : canvas.width, y: laserWarning.y, width: 80, height: 10, speed: fromLeft ? speed : -speed });
-      laserWarning = null; // Remove warning after firing
+      laserWarning = null;
+    }
+
+    function spawnPowerUp() {
+      const type = Math.random() < 0.5 ? 'shield' : 'speed';
+      const width = 20;
+      const height = 20;
+      const x = Math.random() * (canvas.width - width);
+      const speed = 2;
+      powerUps.push({ x, y: 0, width, height, speed, type });
     }
 
     function rectIntersect(r1, r2) {
@@ -114,8 +89,8 @@
     function update() {
       if (gameOver) return;
 
-      if (keys.ArrowLeft && player.onGround) player.x -= player.speed;
-      if (keys.ArrowRight && player.onGround) player.x += player.speed;
+      if (keys.ArrowLeft) player.x -= player.speed;
+      if (keys.ArrowRight) player.x += player.speed;
 
       if (keys.ArrowUp && player.onGround) {
         player.velocityY = player.jumpPower;
@@ -141,28 +116,48 @@
       }
 
       laserTimer++;
-      if (laserTimer === 150) warnLaser(); // Warning at 2.5 sec
-      if (laserTimer === 180) { fireLaser(); laserTimer = 0; } // Fire at 3 sec
+      if (laserTimer === 150) warnLaser();
+      if (laserTimer === 180) { fireLaser(); laserTimer = 0; }
 
-      obstacles.forEach(obs => obs.y += obs.speed); // Now moving downward
+      powerUps.forEach(p => p.y += p.speed);
+
+      obstacles.forEach(obs => obs.y += obs.speed);
       lasers.forEach(laser => laser.x += laser.speed);
 
       obstacles = obstacles.filter(obs => obs.y < canvas.height);
       lasers = lasers.filter(laser => laser.x > -100 && laser.x < canvas.width + 100);
+      powerUps = powerUps.filter(p => p.y < canvas.height);
 
       for (let obs of obstacles) {
         if (rectIntersect(player, obs)) {
-          gameOver = true;
-          document.getElementById("gameOver").style.display = "block";
-          return;
+          if (!player.shield) {
+            gameOver = true;
+            document.getElementById("gameOver").style.display = "block";
+            return;
+          }
         }
       }
 
       for (let laser of lasers) {
         if (rectIntersect(player, laser) && player.y + player.height > laser.y + 5) { 
-          gameOver = true;
-          document.getElementById("gameOver").style.display = "block";
-          return;
+          if (!player.shield) {
+            gameOver = true;
+            document.getElementById("gameOver").style.display = "block";
+            return;
+          }
+        }
+      }
+
+      for (let powerUp of powerUps) {
+        if (rectIntersect(player, powerUp)) {
+          if (powerUp.type === 'shield') {
+            player.shield = true;
+            setTimeout(() => { player.shield = false; }, 5000);
+          } else if (powerUp.type === 'speed') {
+            player.speed += 2;
+            setTimeout(() => { player.speed -= 2; }, 5000);
+          }
+          powerUps = powerUps.filter(p => p !== powerUp);
         }
       }
 
@@ -182,6 +177,9 @@
       ctx.fillStyle = "#ff0";
       lasers.forEach(laser => ctx.fillRect(laser.x, laser.y, laser.width, laser.height));
 
+      ctx.fillStyle = "#00f";
+      powerUps.forEach(p => ctx.fillRect(p.x, p.y, p.width, p.height));
+
       if (laserWarning) {
         ctx.fillStyle = "rgba(255, 0, 0, 0.5)";
         ctx.fillRect(0, laserWarning.y, canvas.width, 10);
@@ -194,8 +192,9 @@
       if (!gameOver) update();
     }
 
+    setInterval(spawnPowerUp, 1000);
+
     requestAnimationFrame(draw);
   </script>
-
 </body>
 </html>
