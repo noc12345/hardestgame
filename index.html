@@ -43,7 +43,7 @@
     let obstacleInterval = 60;
     let gravity = 2;
 
-    const player = { x: 235, y: 460, width: 30, height: 30, speed: 6, jumpPower: -25, velocityY: 0, onGround: true, shield: false, shieldTime: 0 };
+    const player = { x: 235, y: 460, width: 30, height: 30, speed: 6, jumpPower: -25, velocityY: 0, onGround: true, shield: false, shieldTime: 0, speedTime: 0 };
     let obstacles = [];
     let lasers = [];
     let laserWarning = null;
@@ -152,13 +152,21 @@
         if (rectIntersect(player, powerUp)) {
           if (powerUp.type === 'shield') {
             player.shield = true;
-            setTimeout(() => { player.shield = false; }, 5000);
+            player.shieldTime = 5000; // Set shield duration (5 seconds)
           } else if (powerUp.type === 'speed') {
+            player.speedTime = 5000; // Set speed duration (5 seconds)
             player.speed += 2;
-            setTimeout(() => { player.speed -= 2; }, 5000);
           }
           powerUps = powerUps.filter(p => p !== powerUp);
         }
+      }
+
+      if (player.shieldTime > 0) player.shieldTime -= 1000 / 60; // Update shield timer
+      if (player.speedTime > 0) player.speedTime -= 1000 / 60; // Update speed timer
+
+      if (player.shieldTime <= 0) player.shield = false;
+      if (player.speedTime <= 0) {
+        player.speed -= 2; // Reset speed after power-up duration ends
       }
 
       score++;
@@ -189,10 +197,20 @@
       ctx.font = "20px Arial";
       ctx.fillText("Score: " + score, 10, 30);
 
+      // Display power-up timers on the bottom-right
+      ctx.textAlign = "right";
+      ctx.font = "16px Arial";
+      if (player.shield) {
+        ctx.fillText(`Shield - ${Math.max(0, Math.ceil(player.shieldTime / 1000))}`, canvas.width - 10, canvas.height - 40);
+      }
+      if (player.speedTime > 0) {
+        ctx.fillText(`Speed - ${Math.max(0, Math.ceil(player.speedTime / 1000))}`, canvas.width - 10, canvas.height - 20);
+      }
+
       if (!gameOver) update();
     }
 
-    setInterval(spawnPowerUp, 1000);
+    setInterval(spawnPowerUp, 3000); // Power-ups spawn every 3 seconds
 
     requestAnimationFrame(draw);
   </script>
