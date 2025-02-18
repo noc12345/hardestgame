@@ -33,93 +33,169 @@
   <canvas id="gameCanvas" width="500" height="500"></canvas>
   <div id="gameOver">Game Over!<br>Press F5 to Restart</div>
 
- <script>
-  let powerUps = [];
-  let activePowerUp = null;
-  let powerUpTimer = 0;
-
-  function spawnPowerUp() {
-    const types = ["shield", "speed"];
-    const type = types[Math.floor(Math.random() * types.length)];
-    powerUps.push({
-      x: Math.random() * (canvas.width - 20),
-      y: 0,
-      width: 20,
-      height: 20,
-      speed: 2,
-      type
-    });
-  }
-
-  function activatePowerUp(type) {
-    if (type === "shield") {
-      activePowerUp = "shield";
-      powerUpTimer = 300; // 5 seconds
-    } else if (type === "speed") {
-      player.speed *= 2;
-      activePowerUp = "speed";
-      powerUpTimer = 180; // 3 seconds
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Falling Dodge Game</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      font-family: sans-serif;
     }
-  }
+    canvas {
+      background-color: #222;
+      border: 2px solid #fff;
+    }
+    #gameOver {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 36px;
+      text-align: center;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="500" height="500"></canvas>
+  <div id="gameOver">Game Over!<br>Press F5 to Restart</div>
 
-  function update() {
-    if (gameOver) return;
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
 
-    powerUps.forEach(p => p.y += p.speed);
-    powerUps = powerUps.filter(p => p.y < canvas.height);
+    let gameOver = false;
+    let score = 0;
+    let obstacleTimer = 0;
+    let obstacleInterval = 60;
+    let gravity = 3;
 
-    for (let i = 0; i < powerUps.length; i++) {
-      if (rectIntersect(player, powerUps[i])) {
-        activatePowerUp(powerUps[i].type);
-        powerUps.splice(i, 1);
-        break;
+    const player = { x: 235, y: 460, width: 30, height: 30, speed: 5, jumpPower: -15, velocityY: 0, onGround: true };
+    let obstacles = [];
+    let lasers = [];
+    let laserWarning = null;
+    let laserTimer = 0;
+    const keys = { ArrowLeft: false, ArrowRight: false, ArrowUp: false };
+
+    document.addEventListener("keydown", (e) => { if (keys.hasOwnProperty(e.code)) keys[e.code] = true; });
+    document.addEventListener("keyup", (e) => { if (keys.hasOwnProperty(e.code)) keys[e.code] = false; });
+
+    function spawnObstacle() {
+      const width = Math.random() * 30 + 20;
+      const height = Math.random() * 20 + 20;
+      const x = Math.random() * (canvas.width - width);
+      const speed = Math.random() * 2 + 2;
+      obstacles.push({ x, y: 0, width, height, speed }); // Now falling from the top!
+    }
+
+    function warnLaser() {
+      laserWarning = { y: player.y + player.height / 2, timer: 60 }; // Warning before firing
+    }
+
+    function fireLaser() {
+      const fromLeft = Math.random() < 0.5;
+      const speed = 8;
+      lasers.push({ x: fromLeft ? 0 : canvas.width, y: laserWarning.y, width: 80, height: 10, speed: fromLeft ? speed : -speed });
+      laserWarning = null; // Remove warning after firing
+    }
+
+    function rectIntersect(r1, r2) {
+      return !(r2.x > r1.x + r1.width || r2.x + r2.width < r1.x || r2.y > r1.y + r1.height || r2.y + r2.height < r1.y);
+    }
+
+    function update() {
+      if (gameOver) return;
+
+      if (keys.ArrowLeft && player.onGround) player.x -= player.speed;
+      if (keys.ArrowRight && player.onGround) player.x += player.speed;
+
+      if (keys.ArrowUp && player.onGround) {
+        player.velocityY = player.jumpPower;
+        player.onGround = false;
       }
-    }
 
-    if (activePowerUp) {
-      powerUpTimer--;
-      if (powerUpTimer <= 0) {
-        if (activePowerUp === "speed") player.speed /= 2;
-        activePowerUp = null;
+      player.velocityY += gravity;
+      player.y += player.velocityY;
+
+      if (player.y > 460) { 
+        player.y = 460;
+        player.onGround = true;
+        player.velocityY = 0;
       }
+
+      player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+
+      obstacleTimer++;
+      if (obstacleTimer > obstacleInterval) {
+        spawnObstacle();
+        obstacleTimer = 0;
+        if (obstacleInterval > 20) obstacleInterval--;
+      }
+
+      laserTimer++;
+      if (laserTimer === 150) warnLaser(); // Warning at 2.5 sec
+      if (laserTimer === 180) { fireLaser(); laserTimer = 0; } // Fire at 3 sec
+
+      obstacles.forEach(obs => obs.y += obs.speed); // Now moving downward
+      lasers.forEach(laser => laser.x += laser.speed);
+
+      obstacles = obstacles.filter(obs => obs.y < canvas.height);
+      lasers = lasers.filter(laser => laser.x > -100 && laser.x < canvas.width + 100);
+
+      for (let obs of obstacles) {
+        if (rectIntersect(player, obs)) {
+          gameOver = true;
+          document.getElementById("gameOver").style.display = "block";
+          return;
+        }
+      }
+
+      for (let laser of lasers) {
+        if (rectIntersect(player, laser) && player.y + player.height > laser.y + 5) { 
+          gameOver = true;
+          document.getElementById("gameOver").style.display = "block";
+          return;
+        }
+      }
+
+      score++;
+      requestAnimationFrame(draw);
     }
 
-    if (Math.random() < 0.005) spawnPowerUp();
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#0f0";
+      ctx.fillRect(player.x, player.y, player.width, player.height);
+
+      ctx.fillStyle = "#f00";
+      obstacles.forEach(obs => ctx.fillRect(obs.x, obs.y, obs.width, obs.height));
+
+      ctx.fillStyle = "#ff0";
+      lasers.forEach(laser => ctx.fillRect(laser.x, laser.y, laser.width, laser.height));
+
+      if (laserWarning) {
+        ctx.fillStyle = "rgba(255, 0, 0, 0.5)";
+        ctx.fillRect(0, laserWarning.y, canvas.width, 10);
+      }
+
+      ctx.fillStyle = "#fff";
+      ctx.font = "20px Arial";
+      ctx.fillText("Score: " + score, 10, 30);
+
+      if (!gameOver) update();
+    }
 
     requestAnimationFrame(draw);
-  }
-
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Player
-    ctx.fillStyle = activePowerUp === "shield" ? "cyan" : "#0f0";
-    ctx.fillRect(player.x, player.y, player.width, player.height);
-
-    // Obstacles
-    ctx.fillStyle = "#f00";
-    obstacles.forEach(obs => ctx.fillRect(obs.x, obs.y, obs.width, obs.height));
-
-    // Lasers
-    ctx.fillStyle = "#ff0";
-    lasers.forEach(laser => ctx.fillRect(laser.x, laser.y, laser.width, laser.height));
-
-    // Power-Ups
-    powerUps.forEach(p => {
-      ctx.fillStyle = p.type === "shield" ? "cyan" : "purple";
-      ctx.fillRect(p.x, p.y, p.width, p.height);
-    });
-
-    // Score
-    ctx.fillStyle = "#fff";
-    ctx.font = "20px Arial";
-    ctx.fillText("Score: " + score, 10, 30);
-
-    if (!gameOver) update();
-  }
-
-  requestAnimationFrame(draw);
-</script>
+  </script>
 
 </body>
 </html>
