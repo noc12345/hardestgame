@@ -43,7 +43,7 @@
     let obstacleInterval = 60;
     let gravity = 3;
 
-    const player = { x: 235, y: 460, width: 30, height: 30, speed: 5, jumpPower: -15, velocityY: 0, onGround: true };
+    const player = { x: 235, y: 460, width: 30, height: 30, speed: 5, jumpPower: -35, velocityY: 0, onGround: true };
     let obstacles = [];
     let lasers = [];
     let laserWarning = null;
@@ -109,7 +109,7 @@
       if (laserTimer === 150) warnLaser(); // Warning at 2.5 sec
       if (laserTimer === 180) { fireLaser(); laserTimer = 0; } // Fire at 3 sec
 
-      obstacles.forEach(obs => obs.y += obs.speed); // Now moving downward
+      obstacles.forEach(obs => obs.y += obs.speed); 
       lasers.forEach(laser => laser.x += laser.speed);
 
       obstacles = obstacles.filter(obs => obs.y < canvas.height);
