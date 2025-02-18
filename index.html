@@ -1,134 +1,177 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The World's Easiest Game</title>
-    <style>
-        #player {
-            width: 30px;
-            height: 30px;
-            background-color: blue;
-            position: absolute;
-            left: 0;
-            top: 50px;
-        }
-    </style>
+  <title>Dodge the Falling Blocks</title>
+  <style>
+    /* Basic styling to center the canvas and set a dark background */
+    body {
+      margin: 0;
+      background-color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+    canvas {
+      background-color: #222;
+      border: 2px solid #fff;
+    }
+    /* Game over message styling */
+    #gameOver {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 36px;
+      text-align: center;
+      display: none;
+    }
+  </style>
 </head>
 <body>
+  <canvas id="gameCanvas" width="500" height="500"></canvas>
+  <div id="gameOver">Game Over!<br>Press F5 to Restart</div>
 
-    <div id="player"></div>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
 
-    <script>
-        let player = document.getElementById("player");
+    // Game state variables
+    let gameOver = false;
+    let score = 0;
+    let obstacleTimer = 0;
+    let obstacleInterval = 60; // Frames between obstacle spawns
 
-        let positionX = 0;
-        let positionY = 50;
-        let speed = 3;
-        const keysPressed = {};
+    // Define the player object
+    const player = {
+      x: canvas.width / 2 - 15,
+      y: canvas.height - 40,
+      width: 30,
+      height: 30,
+      speed: 5
+    };
 
-        // Initial player start positions
-        const startX = 0;
-        const startY = 50;
+    // Array to hold falling obstacles
+    let obstacles = [];
 
-        // Detect key presses
-        document.addEventListener('keydown', function(event) {
-            keysPressed[event.key.toLowerCase()] = true;
-        });
+    // Object to track keyboard input
+    const keys = {
+      ArrowLeft: false,
+      ArrowRight: false
+    };
 
-        document.addEventListener('keyup', function(event) {
-            keysPressed[event.key.toLowerCase()] = false;
-        });
+    // Listen for key press events to move the player
+    document.addEventListener("keydown", function(e) {
+      if (e.code === "ArrowLeft" || e.code === "ArrowRight") {
+        keys[e.code] = true;
+      }
+    });
 
-        // Check collision between player and target square
-        function isColliding(player, target) {
-            const playerRect = player.getBoundingClientRect();
-            const targetRect = target.getBoundingClientRect();
+    document.addEventListener("keyup", function(e) {
+      if (e.code === "ArrowLeft" || e.code === "ArrowRight") {
+        keys[e.code] = false;
+      }
+    });
 
-            return !(
-                playerRect.top > targetRect.bottom ||
-                playerRect.bottom < targetRect.top ||
-                playerRect.left > targetRect.right ||
-                playerRect.right < targetRect.left
-            );
+    // Function to spawn a new falling obstacle with random size and speed
+    function spawnObstacle() {
+      const width = Math.random() * 30 + 20;   // Width between 20 and 50
+      const height = Math.random() * 20 + 20;    // Height between 20 and 40
+      const x = Math.random() * (canvas.width - width);
+      const y = -height;
+      const speed = Math.random() * 2 + 2;         // Speed between 2 and 4
+      obstacles.push({ x, y, width, height, speed });
+    }
+
+    // Check for collision between two rectangles
+    function rectIntersect(r1, r2) {
+      return !(r2.x > r1.x + r1.width || 
+               r2.x + r2.width < r1.x || 
+               r2.y > r1.y + r1.height ||
+               r2.y + r2.height < r1.y);
+    }
+
+    // Update game objects and check for collisions
+    function update() {
+      if (gameOver) return;
+
+      // Move player left/right based on input
+      if (keys.ArrowLeft) {
+        player.x -= player.speed;
+      }
+      if (keys.ArrowRight) {
+        player.x += player.speed;
+      }
+      // Keep the player within the canvas boundaries
+      if (player.x < 0) player.x = 0;
+      if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+
+      // Spawn new obstacles at intervals
+      obstacleTimer++;
+      if (obstacleTimer > obstacleInterval) {
+        spawnObstacle();
+        obstacleTimer = 0;
+        // Gradually increase difficulty by reducing the interval (down to a limit)
+        if (obstacleInterval > 20) {
+          obstacleInterval--;
         }
+      }
 
-        // Function to create and add a square
-        function addSquare(color, width, height, left, top, type) {
-            const square = document.createElement("div");
-            square.style.width = width + "px";
-            square.style.height = height + "px";
-            square.style.backgroundColor = color;
-            square.style.position = "absolute";
-            square.style.left = left + "px";
-            square.style.top = top + "px";
+      // Update each obstacle's position
+      obstacles.forEach(obs => {
+        obs.y += obs.speed;
+      });
 
-            // Add class to identify red or black square
-            square.classList.add(type);
-            document.body.appendChild(square);
-            return square;
+      // Remove obstacles that have moved off the bottom of the canvas
+      obstacles = obstacles.filter(obs => obs.y < canvas.height);
+
+      // Check for collisions between the player and obstacles
+      for (let obs of obstacles) {
+        if (rectIntersect(player, obs)) {
+          gameOver = true;
+          document.getElementById("gameOver").style.display = "block";
+          break;
         }
+      }
 
-        // Create squares using the function
-        const redSquare = addSquare("red", 30, 40, 300, 200, "redSquare");
-        const wall = addSquare("black", 20, 150, 150, 50, "wall");
+      // Increase score over time (you can adjust this as desired)
+      score++;
 
-        // Move the player square and check for collisions
-        function movePlayer() {
-            let moveX = 0;
-            let moveY = 0;
+      // Continue the game loop
+      requestAnimationFrame(draw);
+    }
 
-            if (keysPressed['d']) {
-                moveX += speed; // Move right
-            }
-            if (keysPressed['a']) {
-                moveX -= speed; // Move left
-            }
-            if (keysPressed['w']) {
-                moveY -= speed; // Move up
-            }
-            if (keysPressed['s']) {
-                moveY += speed; // Move down
-            }
+    // Draw all game objects onto the canvas
+    function draw() {
+      // Clear the canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Normalize diagonal movement
-            if (moveX !== 0 && moveY !== 0) {
-                const diagonalSpeed = Math.sqrt(moveX * moveX + moveY * moveY);
-                moveX = (moveX / diagonalSpeed) * speed;
-                moveY = (moveY / diagonalSpeed) * speed;
-            }
+      // Draw the player as a green square
+      ctx.fillStyle = "#0f0";
+      ctx.fillRect(player.x, player.y, player.width, player.height);
 
-            // Check collision with the wall
-            let newPosX = positionX + moveX;
-            let newPosY = positionY + moveY;
+      // Draw all obstacles as red rectangles
+      ctx.fillStyle = "#f00";
+      obstacles.forEach(obs => {
+        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+      });
 
-            // Temporarily set the player position to check collision
-            player.style.left = newPosX + 'px';
-            player.style.top = newPosY + 'px';
+      // Draw the current score in white
+      ctx.fillStyle = "#fff";
+      ctx.font = "20px Arial";
+      ctx.fillText("Score: " + score, 10, 30);
 
-            // If there's no collision with the wall, update the position
-            if (!isColliding(player, wall)) {
-                positionX = newPosX;
-                positionY = newPosY;
-            }
+      // Continue updating if the game is still active
+      if (!gameOver) {
+        update();
+      }
+    }
 
-            // Reset the player position if colliding with the red square
-            if (isColliding(player, redSquare)) {
-                positionX = startX;
-                positionY = startY;
-                player.style.left = positionX + 'px';
-                player.style.top = positionY + 'px';
-            }
-
-            // Update player position on screen
-            player.style.left = positionX + 'px';
-            player.style.top = positionY + 'px';
-
-            requestAnimationFrame(movePlayer); // Continuously update movement
-        }
-
-        movePlayer(); // Start the movement loop
-    </script>
-
+    // Start the game loop
+    requestAnimationFrame(draw);
+  </script>
 </body>
 </html>
