@@ -1,4 +1,39 @@
-<script>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Falling Dodge Game</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+    canvas {
+      background-color: #222;
+      border: 2px solid #fff;
+    }
+    #gameOver {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 36px;
+      text-align: center;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="500" height="500"></canvas>
+  <div id="gameOver">Game Over!<br>Press F5 to Restart</div>
+
+ <script>
   let powerUps = [];
   let activePowerUp = null;
   let powerUpTimer = 0;
@@ -57,22 +92,25 @@
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Player
     ctx.fillStyle = activePowerUp === "shield" ? "cyan" : "#0f0";
     ctx.fillRect(player.x, player.y, player.width, player.height);
 
+    // Obstacles
     ctx.fillStyle = "#f00";
     obstacles.forEach(obs => ctx.fillRect(obs.x, obs.y, obs.width, obs.height));
 
+    // Lasers
     ctx.fillStyle = "#ff0";
     lasers.forEach(laser => ctx.fillRect(laser.x, laser.y, laser.width, laser.height));
 
-    ctx.fillStyle = "blue";
+    // Power-Ups
     powerUps.forEach(p => {
-      ctx.fillRect(p.x, p.y, p.width, p.height);
       ctx.fillStyle = p.type === "shield" ? "cyan" : "purple";
-      ctx.fillRect(p.x + 5, p.y + 5, p.width - 10, p.height - 10);
+      ctx.fillRect(p.x, p.y, p.width, p.height);
     });
 
+    // Score
     ctx.fillStyle = "#fff";
     ctx.font = "20px Arial";
     ctx.fillText("Score: " + score, 10, 30);
@@ -82,3 +120,6 @@
 
   requestAnimationFrame(draw);
 </script>
+
+</body>
+</html>
