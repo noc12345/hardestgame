@@ -43,7 +43,7 @@
     let obstacleInterval = 60;
     let gravity = 3;
 
-    const player = { x: 235, y: 460, width: 30, height: 30, speed: 5, jumpPower: -35, velocityY: 0, onGround: true };
+    const player = { x: 235, y: 460, width: 30, height: 30, speed: 5, jumpPower: -20, velocityY: 0, onGround: true };
     let obstacles = [];
     let lasers = [];
     let laserWarning = null;
@@ -79,8 +79,8 @@
     function update() {
       if (gameOver) return;
 
-      if (keys.ArrowLeft && player.onGround) player.x -= player.speed;
-      if (keys.ArrowRight && player.onGround) player.x += player.speed;
+      if (keys.ArrowLeft) player.x -= player.speed;
+      if (keys.ArrowRight) player.x += player.speed;
 
       if (keys.ArrowUp && player.onGround) {
         player.velocityY = player.jumpPower;
